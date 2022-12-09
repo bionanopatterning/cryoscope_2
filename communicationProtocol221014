@@ -1,0 +1,528 @@
+byte dataIn;
+
+int led1 = 2;
+int led2 = 3;
+int led3 = 4;
+int led4 = 5;
+int led5 = 6;
+
+int testLedG = 13;
+bool _testLedG = false;
+int testLedR = 12;
+bool _testLedR = false;
+
+int pco_1 = 8; // trigger exposure
+int pco_2 = 9; // acquire enable
+int pco_3 = 10; // status busy
+int pco_4 = 11; // common exposure time
+
+bool liveMode = false;
+bool snapMode = false;
+bool acquireMode = false;
+bool acquisitionPaused = false;
+int exposureTime = 0;
+int totalRepeats = 1;
+int currentRepeat = 0;
+int currentChannel = 0;
+int currentLiveChannel = 0;
+int numLiveChannels = 0;
+int activeChannels = 0;
+int lastRequestedFilter = 0;
+bool awaitingFilterConfirmation = false;
+// acquisition array set setup
+const int maxChannels = 32;
+// zstack setup
+const int maxSlices = 128;
+int currentSlice = 0;
+float zPos[maxSlices];
+int numSlices = 1;
+bool zStack = false;
+const float FILTER_SETTLING_TIME = 1000;
+const float FOCUS_SETTLING_TIME = 200;
+
+void checkBusy()
+{
+  while (digitalRead(pco_3) == 1) {
+    delay(1);
+  }
+}
+
+void setFocus(float focus)
+{
+  Serial.print("H");
+  Serial.print(focus);
+  Serial.print("h");
+  byte tempIn = ' ';
+  while (tempIn != 'H')
+  {
+    tempIn = Serial.read();
+    delay(1);
+    if (tempIn == 'U')
+    {
+      stop_acquiring();
+      break;
+    }
+  }
+  delay(FOCUS_SETTLING_TIME);
+}
+
+void setFilter(int filter)
+{
+  if (filter == lastRequestedFilter)
+  {
+
+  }
+  else if (filter >= 0)
+  {
+    lastRequestedFilter = filter;
+    Serial.print("F");
+    Serial.print(filter);
+    // Wait until PC responds with F, signalling that the right filter is in place.
+    byte tempIn = ' ';
+    while (tempIn != 'F')
+    {
+      tempIn = Serial.read();
+      delay(1);
+      if (tempIn == 'U')
+      {
+        stop_acquiring();
+        break;
+      }
+    }
+    delay(FILTER_SETTLING_TIME);
+  }
+}
+
+void setLeds(int ledState)
+{
+  digitalWrite(led1, (bitRead(ledState, 0)) ? HIGH : LOW);
+  digitalWrite(led2, (bitRead(ledState, 1)) ? HIGH : LOW);
+  digitalWrite(led3, (bitRead(ledState, 2)) ? HIGH : LOW);
+  digitalWrite(led4, (bitRead(ledState, 3)) ? HIGH : LOW);
+  digitalWrite(led5, (bitRead(ledState, 4)) ? HIGH : LOW);
+}
+
+void snap()
+{
+  checkBusy();
+  digitalWrite(testLedG, HIGH);
+  digitalWrite(pco_1, HIGH);
+  delay(exposureTime);
+  digitalWrite(pco_1, LOW);
+  digitalWrite(testLedG, LOW);
+}
+
+class Channel
+{
+  public:
+    int exposure = 500;
+    int leds = 0;
+    int repeats = 1;
+    bool repeater = false;
+    int count = 0;
+    int filter = -1;
+    Channel() {}
+
+    Channel(int input_exposure, int input_leds, int input_repeats, int input_filter)
+    {
+      this->exposure = input_exposure;
+      this->leds = input_leds;
+      this->repeats = input_repeats;
+      this->count = 0;
+      this->repeater = false;
+      this->filter = filter;
+    }
+
+    void makeRepeater(int repeaterRepeats)
+    {
+      this->count = repeaterRepeats;
+      this->repeats = repeaterRepeats;
+      this->repeater = true;
+    }
+
+    int acquireFrame()
+    {
+      if (!this->repeater)
+      {
+        if (this->count == 0)
+        {
+          setLeds(this->leds);
+          exposureTime = this->exposure;
+          setFilter(this->filter);
+        }
+        snap();
+        this->count++;
+        if (this->count == this->repeats)
+        {
+          this->count = 0;
+          return 1;
+        }
+        return 0;
+      }
+      else
+      {
+        this->count -= 1;
+        if (this->count > 0)
+        {
+          return 2;
+        }
+        else
+        {
+          return 1;
+        }
+      }
+    }
+
+    void liveFrame()
+    {
+      setLeds(this->leds);
+      exposureTime = this->exposure;
+      setFilter(this->filter);
+      snap();
+    }
+};
+
+
+Channel channels[maxChannels];
+void liveNextFrame()
+{
+  channels[currentLiveChannel].liveFrame();
+  currentLiveChannel++;
+  if (currentLiveChannel >= numLiveChannels)
+  {
+    currentLiveChannel = 0;
+  }
+}
+
+void snapNextFrame()
+{
+  if (!zStack)
+  {
+    channels[currentLiveChannel].liveFrame();
+    currentLiveChannel++;
+    if (currentLiveChannel >= numLiveChannels)
+    {
+      snapMode = false;
+    }
+  }
+  else
+  {
+    setFocus(zPos[currentSlice]);
+    channels[currentLiveChannel].liveFrame();
+    currentSlice++;
+    if (currentSlice >= numSlices)
+    {
+      currentSlice = 0;
+      currentLiveChannel++;
+    }
+    if (currentLiveChannel >= numLiveChannels)
+    {
+      snapMode = false;
+    }
+  }
+
+}
+bool acquireNextFrame()
+{
+  // instructions:
+  // get the next frame of the current channel.
+  int acquisitionStatus = channels[currentChannel].acquireFrame();
+  // if acquisitionStatus is 0, we need another frame in that channel. Do nothing.
+  // if acquisitionStatus is 1, this channel is done. Go to the next channel.
+  if (acquisitionStatus == 1)
+  {
+    currentChannel += 1;
+  }
+  // if acquisitionStatus is 2, we encountered a repeater which is not yet depleted; send the acquisition loop back to the first channel in the repeater's section.
+  if (acquisitionStatus == 2)
+  {
+    int newIndex = 0;
+    for (int c = currentChannel - 1; c>=0; c--)
+    {
+      if (channels[c].repeater)
+      {
+        break;
+      }
+      else
+      {
+        newIndex = c;
+      }
+    }
+    currentChannel = newIndex;
+  }
+  if (currentChannel >= activeChannels)
+  {
+    currentRepeat += 1;
+    currentChannel = 0;
+    if (currentRepeat >= totalRepeats)
+    {
+      return false;
+    }
+    else
+    {
+      return true;
+    }
+  }
+  else
+  {
+    return true;
+  }
+}
+
+void ParseAcquisitionInput()
+{
+  currentChannel = 0;
+  currentRepeat = 0;
+  activeChannels = 1;
+  currentLiveChannel = 0;
+  numLiveChannels = 1;
+  numSlices = 0;
+  zStack = false;
+  // instructions
+  // T: total repeats.
+  // W: channel repeats
+  // Z: channel exposure time
+  // R: next channel
+  // K: channel is a segment separator
+  // A, B, C, D, E: led ON
+  // F: filter
+  // Q: input end.
+
+  byte tempIn = '0';
+  int channelIndex = 0;
+  channels[channelIndex] = Channel();
+  while (tempIn != 'Q')
+  {
+    tempIn = Serial.read();
+    if (tempIn == 'T')
+    {
+      totalRepeats = readTaggedNumber('t');
+    }
+    else if (tempIn == 'R')
+    {
+      channelIndex +=1;
+      activeChannels += 1;
+      numLiveChannels += 1;
+      channels[channelIndex] = Channel();
+    }
+    else if (tempIn == 'W')
+    {
+      channels[channelIndex].repeats = readTaggedNumber('w');
+    }
+    else if (tempIn == 'Z')
+    {
+      channels[channelIndex].exposure = readTaggedNumber('z');
+    }
+    else if (tempIn == 'K')
+    {
+      int repeaterRepeats = readTaggedNumber('k');
+      channels[channelIndex].makeRepeater(repeaterRepeats);
+    }
+    else if (tempIn == 'A')
+    {
+      channels[channelIndex].leds += 1;
+    }
+    else if (tempIn == 'B')
+    {
+      channels[channelIndex].leds += 2;
+    }
+    else if (tempIn == 'C')
+    {
+      channels[channelIndex].leds += 4;
+    }
+    else if (tempIn == 'D')
+    {
+      channels[channelIndex].leds += 8;
+    }
+    else if (tempIn == 'E')
+    {
+      channels[channelIndex].leds += 16;
+    }
+    else if (tempIn == 'F')
+    {
+      channels[channelIndex].filter = readTaggedNumber('f');
+    }
+    else if (tempIn == 'H')
+    {
+      zPos[numSlices] = readTaggedFloat('h');
+      numSlices++;
+      zStack = true;
+    }
+  }
+  //printSetup();
+}
+
+void printSetup()
+{
+  for (int c = 0; c<activeChannels;c++)
+  {
+    Channel channel = channels[c];
+    Serial.println("Channel");
+    Serial.print("\t");
+    Serial.println(c);
+    Serial.println("exposure");
+    Serial.print("\t");
+    Serial.println(channel.exposure);
+    Serial.println("repeats");
+    Serial.print("\t");
+    Serial.println(channel.repeats);
+    Serial.println("led state int");
+    Serial.print("\t");
+    Serial.println(channel.leds);
+    Serial.println("is repeater:");
+    Serial.print("\t");
+    Serial.println(channel.repeater);
+    Serial.println();
+    Serial.println();
+  }
+}
+
+void setup()
+{
+  // put your setup code here, to run once:
+  Serial.begin(9600);
+  pinMode(13, OUTPUT);
+  digitalWrite(13, LOW);
+
+  pinMode(led1, OUTPUT);
+  pinMode(led2, OUTPUT);
+  pinMode(led3, OUTPUT);
+  pinMode(led4, OUTPUT);
+  pinMode(led5, OUTPUT);
+  pinMode(pco_1, OUTPUT);
+  pinMode(pco_2, OUTPUT);
+  pinMode(pco_3, INPUT);
+  pinMode(pco_4, INPUT);
+  pinMode(testLedG, OUTPUT);
+  pinMode(testLedR, OUTPUT);
+  digitalWrite(led1, LOW);
+  digitalWrite(led2, LOW);
+  digitalWrite(led3, LOW);
+  digitalWrite(led4, LOW);
+  digitalWrite(led5, LOW);
+}
+
+int readTaggedNumber(char tag)
+{
+  dataIn = Serial.read();
+  int _num = 0;
+  while (dataIn != tag)
+  {
+      _num *= 10;
+      _num += (dataIn - '0');
+      dataIn = Serial.read();
+  }
+  return _num;
+}
+
+float readTaggedFloat(char tag)
+{
+  dataIn = Serial.read();
+  String floatStr = "";
+  while (dataIn != tag)
+  {
+    floatStr += char(dataIn);
+    dataIn = Serial.read();
+  }
+  return floatStr.toFloat();
+}
+
+void stop_acquiring()
+{
+    acquireMode = false;
+    liveMode = false;
+    snapMode = false;
+    digitalWrite(testLedG, HIGH);
+    digitalWrite(testLedR, LOW);
+    setLeds(0);
+}
+
+void loop() {
+  if (Serial)
+  {
+    dataIn = Serial.read();
+  }
+  else
+  {
+    dataIn = 'U';
+  }
+  if (dataIn == 'U') // cancel / exit / override
+  {
+    stop_acquiring();
+  }
+  else if (dataIn == 'P')
+  {
+    acquisitionPaused = !acquisitionPaused;
+  }
+  else if (acquisitionPaused)
+  {
+
+  }
+  else if (dataIn == 'Q')
+  {
+    ParseAcquisitionInput();
+  }
+  else if (dataIn == 'S') // start acquisition
+  {
+    acquireMode = true;
+  }
+  else if (acquireMode)
+  {
+    acquireMode = acquireNextFrame();
+  }
+  else if (liveMode)
+  {
+    if (dataIn == 'X')
+    {
+      liveMode = false;
+      currentLiveChannel = 0;
+    }
+    else
+    {
+      liveNextFrame();
+    }
+  }
+  else if (snapMode)
+  {
+    snapNextFrame();
+  }
+  else
+  {
+    switch (dataIn)
+    {
+    case 'A':
+      digitalWrite(led1, LOW);
+      break;
+    case 'B':
+      digitalWrite(led2, LOW);
+      break;
+    case 'C':
+      digitalWrite(led3, LOW);
+      break;
+    case 'D':
+      digitalWrite(led4, LOW);
+      break;
+    case 'E':
+      digitalWrite(led5, LOW);
+      break;
+    case 'G':
+      _testLedG = !_testLedG;
+      if (_testLedG) {
+        digitalWrite(testLedG, HIGH); }
+      else {
+        digitalWrite(testLedG, LOW); }
+      break;
+    case 'X': // toggle live view mode on or off
+      liveMode = true;
+      break;
+    case 'Y': // toggle snap mode on or off
+      snapMode = true;
+      break;
+    case 'Z': // signal that numbers are incoming, being the new exposure time in milliseconds
+      exposureTime = readTaggedNumber('z');
+      break;
+    default:
+      break;
+    }
+  }
+}
