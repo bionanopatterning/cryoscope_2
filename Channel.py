@@ -6,7 +6,7 @@ from PIL import Image
 class Channel():
     idGenerator = count()
     def __init__(self):
-        self.leds = [False, False, False, False, False, False]
+        self.leds = [False, False, False, False, False, False, False]
         self.filterCube = 0
         self.save = True
         self.enable = True
@@ -20,7 +20,7 @@ class Channel():
         self.notes = "..."
         self.latest_img = np.zeros((2048, 2048))
         self.n_saved = 0
-        self.texture = Texture(format = "ru16")
+        self.texture = Texture(format="ru16")
         self.show = True
         self.contrast_min = 0
         self.contrast_max = 65535
@@ -34,7 +34,7 @@ class Channel():
         self.setImage(self.latest_img)
 
     def __eq__(self, other):
-        return self.uid == other.uid # possible error when other is not of type Channel.
+        return self.uid == other.uid  # possible error when other is not of type Channel.
 
     def setImage(self, img):
         self.latest_img = img

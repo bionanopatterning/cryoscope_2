@@ -37,15 +37,16 @@ def setState(leds):
 
 def setPower(leds):
     """
-    :param leds: list of five integers between 0 - 100, corresponding to the power level in % of max. power you want to
+    :param leds: list of six integers between 0 - 100, corresponding to the power level in % of max. power you want to
     set on the light emitting devices. Positions in this list correspond to arduino communication protocol chars 'A, B, C, etc.',
     see the above global definition of LED_HI and LED_LO. Which letter addresses which light source depends on wiring of TTL
     connectors between arduino and light source enable pins.
     :return:
     """
-    trace("CombinedLightSource.setPower ...\n [{leds[0]}, {leds[1]}, {leds[2]}, {leds[3]}, {leds[4]}]")
+    trace(f"CombinedLightSource.setPower ...\n [{leds[0]}, {leds[1]}, {leds[2]}, {leds[3]}, {leds[4]}, {leds[5]}]")
     trace(f"Devices found:\n\ti) laser {laser_available}\n\tii) led {led_available}")
     if laser_available:
-        LightHUB.setPower((leds[0], leds[1]))
+        LightHUB.setPower([leds[0], leds[1], leds[2], leds[3]])
     if led_available:
-        LedHUB.setPower([leds[2], leds[3], leds[4]])
+        LedHUB.setPower([leds[4], leds[5], leds[6]])
+

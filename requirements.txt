@@ -1,0 +1,8 @@
+pyserial==3.5
+PyOpenGL==3.1.5
+Pillow==8.4.0
+!pco==0.1.6 # pco-0.1.6-py3-none-win_amd64.whl, on microscope PC shared folder
+numpy==1.21.4
+imgui==1.4.1
+glfw==2.4.0
+

@@ -145,4 +145,3 @@ def waitFor():
 def Safe():
     Send("! z\r")
     Read()
-

@@ -6,6 +6,7 @@ int led3 = 7; // 561 nm - C - arduino pin 7 - no sync pin on this one.
 int led4 = 6; // 405 led - D - arduino pin 6
 int led5 = 2; // 470 led - E - arduino pin 2
 int led6 = 5; // 528 led - I - arduino pin 5
+// 221213: uing the 532 nm laser again. pin2 on the camera is not used, so we're using that connector for output to 532 sync.
 bool led3on = false; // manual sync
 
 int testLedG = 13;
@@ -39,7 +40,7 @@ int currentSlice = 0;
 float zPos[maxSlices];
 int numSlices = 1;
 bool zStack = false;
-const float FILTER_SETTLING_TIME = 1000;
+const float FILTER_SETTLING_TIME = 200;
 const float FOCUS_SETTLING_TIME = 200;
 
 void checkBusy()
@@ -104,6 +105,7 @@ void setLeds(int ledState)
   digitalWrite(led4, (bitRead(ledState, 3)) ? HIGH : LOW);
   digitalWrite(led5, (bitRead(ledState, 4)) ? HIGH : LOW);
   digitalWrite(led6, (bitRead(ledState, 5)) ? HIGH : LOW);
+  digitalWrite(pco_2, (bitRead(ledState, 6)) ? HIGH : LOW);
 }
 
 void snap()
@@ -299,7 +301,7 @@ void ParseAcquisitionInput()
   // Z: channel exposure time
   // R: next channel
   // K: channel is a segment separator
-  // A, B, C, D, E, I: led ON
+  // A, B, C, D, E, I, J: led ON
   // F: filter
   // Q: input end.
 
@@ -356,6 +358,10 @@ void ParseAcquisitionInput()
     else if (tempIn == 'I')
     {
       channels[channelIndex].leds += 32;
+    }
+    else if (tempIn == 'J')
+    {
+      channels[channelIndex].leds += 64;
     }
     else if (tempIn == 'F')
     {
@@ -529,6 +535,9 @@ void loop() {
       break;
     case 'I':
       digitalWrite(led6, LOW);
+      break;
+    case 'J':
+      digitalWrite(pco_2, LOW);
       break;
     case 'G':
       _testLedG = !_testLedG;

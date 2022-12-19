@@ -40,7 +40,7 @@ def Read():
     return _char
 
 def Disconnect():
-    Send("Uabcd")
+    Send("U")
     time.sleep(1)
     Arduino.close()
     info("Arduino serial connection closed.")

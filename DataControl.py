@@ -51,6 +51,7 @@ def UpdateStagePos():
         ASIStage.getFilter()
 
     cfg.log_level = mem_log_level
+
 def MapStart():
     makeMapFolder()
     prm.mode = "mapping"
@@ -64,7 +65,7 @@ def processMapData():
 def makeMapFolder():
     def _writeMapMetadata():
         with open(prm.maps_current_folder + "/md.txt", "w") as mdfile:
-            mdfile.write("Map imaged on "+ datestamp() + " " + timestamp())
+            mdfile.write("Map imaged on " + datestamp() + " " + timestamp())
             mdfile.write("\nTitle: " + prm.maps_title)
             mdfile.write("\nSaved in: " + prm.maps_current_folder)\
 

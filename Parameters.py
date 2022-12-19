@@ -18,7 +18,9 @@ notes_bufferSize = 2000
 cryostage_status = "idle"
 cryostage_temperatures = [100, 100, 100]
 cryostage_temperature_high_warnings = [-190, -165, -190]
-lightSources = ["405", "488", "561", "405L", "470L", "528L"]
+
+lightSources = ["405 nm", "488 nm", "532 nm", "561 nm", "405/6", "470/9", "528/15"]
+lightSourcesNominalPower = [120, 100, 100, 150, 1250, 525, 260]
 acquisitionRepeats = 1
 acquisitionPositionSetting = ["current", "bookmarked"]
 acquisitionPositionSetting_selected = 0
@@ -94,7 +96,7 @@ zStack_num_slices = 0
 zStack_folder = "C:/Users/mgflast/Desktop/cryoscope_data"
 # acquisition
 acquisitionTitle = datestamp()+"_"
-acquisitionPower = [10, 10, 10, 5, 5, 5]
+acquisitionPower = [20, 20, 20, 20, 5, 5, 5]
 acquisitionTotalToSave = 0
 acquisitionTotalToAcquire = 0
 acquisitionSavedSoFar = 0
@@ -104,7 +106,7 @@ acquisitionImageTitleList = None
 acquisitionImageChannelList = None
 acquisitionCurrentFolder = None
 # live
-livePower = [2, 2, 2, 5, 5, 5]
+livePower = [5, 10, 10, 5, 2, 2, 2]
 live_numChannels = 0
 live_latestChannel = 0
 live_activeChannels = None
@@ -141,3 +143,4 @@ maps_stage_settle_time = 0.5
 maps_fixed_condenser_power = 5
 currentMap = None
 mapChannels = list()
+

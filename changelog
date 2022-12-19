@@ -1,0 +1,9 @@
+2022 12 13
+Adding the 532 nm laser.
+pin 2 of the camera is not used. Arduino has been connected to it, so change that connection to be with
+the 532 nm laser sync pin.
+
+Command key is:
+J
+current command keys in use:
+ABCDEFGHIKPQRSTUWXYZ

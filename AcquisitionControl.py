@@ -40,8 +40,8 @@ def OnUpdate():
         if prm.live_powerChanged:
             LightHUB.setPower(prm.livePower)
             prm.live_powerChanged = False
-    elif prm.mode == "mapping":
-        MapOnUpdate()
+    # elif prm.mode == "mapping":
+    #     MapOnUpdate()
 
     arduinoSignal = Arduino.Read()
     if arduinoSignal:
@@ -80,57 +80,57 @@ def OnUpdate():
             Arduino.Send("H")
 
 
-def MapOnUpdate():
-    if not prm.maps_image_processed:
-        # expecting image, is handled by DataControl
-        return None
-    elif prm.maps_awaiting_position:
-        # check if stage has arrived yet
-        if positionsEqual(prm.maps_requested_position, prm.currentPosition, 2.0):
-            print("Position reached")
-            prm.maps_awaiting_position = False
-            time.sleep(prm.maps_stage_settle_time)
-    else:
-        print("next channel!")
-        # check what to do next
-        task, value = prm.currentMap.next()
-        if task == "complete":
-            print("Map completed")
-            prm.mode = "idle"
-            cfg.latestAcquisitionMode = "mapping"
-        elif task == "channel":
-            # Acquire this channel.
-            CryoStage.setCondenser(value.condenser * prm.maps_fixed_condenser_power)
-            # Send to arduino
-            command = "UQT1tZ"+str(value.exposureTime)+"z"
-            command += "F" + str(value.filterCube) + "f"
-            if value.leds[0]:
-                command += "B"
-            if value.leds[1]:
-                command += "C"
-            if value.leds[2]:
-                command += "D"
-            if value.leds[3]:
-                command += "A"
-            if value.leds[4]:
-                command += "E"
-            command+="QX"
-            Arduino.Send(command)
-            prm.maps_image_processed = False
-        elif task == "position":
-            print("Moving to next position")
-            prm.maps_requested_position = value
-            CryoStage.setPosition(value)
-            prm.maps_awaiting_position = True
-        else:
-            raise RuntimeError("Invalid task type in AcquisitionControl.MapOnUpdate()")
-        pass
+# def MapOnUpdate():
+#     if not prm.maps_image_processed:
+#         # expecting image, is handled by DataControl
+#         return None
+#     elif prm.maps_awaiting_position:
+#         # check if stage has arrived yet
+#         if positionsEqual(prm.maps_requested_position, prm.currentPosition, 2.0):
+#             print("Position reached")
+#             prm.maps_awaiting_position = False
+#             time.sleep(prm.maps_stage_settle_time)
+#     else:
+#         print("next channel!")
+#         # check what to do next
+#         task, value = prm.currentMap.next()
+#         if task == "complete":
+#             print("Map completed")
+#             prm.mode = "idle"
+#             cfg.latestAcquisitionMode = "mapping"
+#         elif task == "channel":
+#             # Acquire this channel.
+#             CryoStage.setCondenser(value.condenser * prm.maps_fixed_condenser_power)
+#             # Send to arduino
+#             command = "UQT1tZ"+str(value.exposureTime)+"z"
+#             command += "F" + str(value.filterCube) + "f"
+#             if value.leds[0]:
+#                 command += "B"
+#             if value.leds[1]:
+#                 command += "C"
+#             if value.leds[2]:
+#                 command += "D"
+#             if value.leds[3]:
+#                 command += "A"
+#             if value.leds[4]:
+#                 command += "E"
+#             command+="QX"
+#             Arduino.Send(command)
+#             prm.maps_image_processed = False
+#         elif task == "position":
+#             print("Moving to next position")
+#             prm.maps_requested_position = value
+#             CryoStage.setPosition(value)
+#             prm.maps_awaiting_position = True
+#         else:
+#             raise RuntimeError("Invalid task type in AcquisitionControl.MapOnUpdate()")
+#         pass
 
-def MapStart():
-    newMap = Map.Map([prm.maps_centerMode_width, prm.maps_centerMode_height], prm.mapChannels)
-    prm.currentMap = newMap
-    prm.mode = "mapping"
-    maps_image_processed = False
+# def MapStart():
+#     newMap = Map.Map([prm.maps_centerMode_width, prm.maps_centerMode_height], prm.mapChannels)
+#     prm.currentMap = newMap
+#     prm.mode = "mapping"
+#     maps_image_processed = False
 
 def ChangeSearchSettingsWhileLive():
     Arduino.Send("U")
@@ -162,12 +162,14 @@ def UploadSearchSettings(continuous = True):
             if channel.leds[1]:
                 command += "B"
             if channel.leds[2]:
-                command += "C"
+                command += "J"
             if channel.leds[3]:
-                command += "D"
+                command += "C"
             if channel.leds[4]:
-                command += "E"
+                command += "D"
             if channel.leds[5]:
+                command += "E"
+            if channel.leds[6]:
                 command += "I"
             command += "R"
             trace(command)
@@ -308,12 +310,14 @@ def AcquireStart():
                 if channel.leds[1]:
                     command += "B"
                 if channel.leds[2]:
-                    command += "C"
+                    command += "J"
                 if channel.leds[3]:
-                    command += "D"
+                    command += "C"
                 if channel.leds[4]:
-                    command += "E"
+                    command += "D"
                 if channel.leds[5]:
+                    command += "E"
+                if channel.leds[6]:
                     command += "I"
             command += "R"
 
