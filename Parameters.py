@@ -9,7 +9,7 @@ pixelSize = 6.5 # micron
 numPixels = 2048
 xyStageAngle = 135.0
 # Date and time upon startup
-workingDirectory = "C:/Users/mgflast/Desktop/cryoscope_data"
+workingDirectory = "C:/Users/mmvanklaveren/Cryo data"
 
 acquisitionNotes = "..."
 snapSaveTitle = "snap_"
@@ -48,13 +48,14 @@ focusStepOptions = ["100 nm", "200 nm", "500 nm", "1 um", "2 um", "5 um", "0.1 m
 focusStepOptionsValue = [0.1, 0.2, 0.5, 1, 2, 5, 100]
 focusStepOptionCurrent = 3
 currentFocusPosition = 0.0
-filterCubes = ["rsEGFP2", "RGB Reflection", "RFPs", "Empty"]
+filterCubes = ["rsEGFP2", "RGB Reflection", "RFPs", "BFPs"]
 filterInfo = [
-    "dichroic: FF495-Di03 (Semrock), emission: FF01-550/88 (Semrock) - upd. 221209",
-    "dichroic: 51000bs (Chroma) - upd. 221209",
-    "dichroic: FF570-Di01 (Semrock), emission: FF01-630/92 (Semrock)",
-    "no filters",
+    "dichroic: FF495-Di03 (Semrock), emission: FF01-525/50 (Semrock) - 230117",
+    "dichroic: 51000bs (Chroma) - 221209",
+    "dichroic: FF570-Di01 (Semrock), emission: FF01-630/92 (Semrock) - 221209",
+    "dichroic: MD416 (Thorlabs) emission: MF460-60 (Thorlabs) - 230117",
                 ]
+
 currentFilter = 0
 filterStageSpeed = 20.0 # mm / s
 filterStageAcceleration = 100 # milliseconds to reach the speed setpoint
@@ -96,7 +97,7 @@ zStack_num_slices = 0
 zStack_folder = "C:/Users/mgflast/Desktop/cryoscope_data"
 # acquisition
 acquisitionTitle = datestamp()+"_"
-acquisitionPower = [20, 20, 20, 20, 5, 5, 5]
+acquisitionPower = [10, 10, 10, 10, 5, 5, 5]
 acquisitionTotalToSave = 0
 acquisitionTotalToAcquire = 0
 acquisitionSavedSoFar = 0

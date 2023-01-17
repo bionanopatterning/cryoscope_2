@@ -142,9 +142,9 @@ def MAINLoop():
         impl.render(imgui.get_draw_data())
         glfw.swap_buffers(window)
         itnr += 1
-        if itnr == 10:
-            prm.cameraConnected = pcoCamera.Connect()
-            AcquisitionControl.LateInitToFixWeirdPcoBug()
+        #if itnr == 10:
+            #prm.cameraConnected = pcoCamera.Connect()
+            #AcquisitionControl.LateInitToFixWeirdPcoBug()
 
     impl.shutdown()
     glfw.terminate()

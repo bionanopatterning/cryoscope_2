@@ -100,7 +100,7 @@ void setLeds(int ledState)
 {
   digitalWrite(led1, (bitRead(ledState, 0)) ? HIGH : LOW);
   digitalWrite(led2, (bitRead(ledState, 1)) ? HIGH : LOW);
-  digitalWrite(led3, (bitRead(ledState, 2)) ? HIGH : LOW);
+  //digitalWrite(led3, (bitRead(ledState, 2)) ? HIGH : LOW);
   led3on = bitRead(ledState, 2);
   digitalWrite(led4, (bitRead(ledState, 3)) ? HIGH : LOW);
   digitalWrite(led5, (bitRead(ledState, 4)) ? HIGH : LOW);
@@ -185,6 +185,7 @@ class Channel
         }
         else
         {
+          this->count = this->repeats;
           return 1;
         }
       }
@@ -267,6 +268,7 @@ bool acquireNextFrame()
     }
     currentChannel = newIndex;
   }
+  // finally, upon completing one round of the last channel, increment currentRepeat by one and start the next round.
   if (currentChannel >= activeChannels)
   {
     currentRepeat += 1;

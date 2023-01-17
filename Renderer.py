@@ -22,8 +22,8 @@ import IconLib
 
 def Init():
     global screenShader, channelShader, vertexArray, FBO_A, FBO_B, screenViewVertexArray
-    screenShader = Shader("C:/Users/mgflast/PycharmProjects/Cryoscope v2/Shaders/toScreenShader.glsl")
-    channelShader = Shader("C:/Users/mgflast/PycharmProjects/Cryoscope v2/Shaders/primaryShader.glsl")
+    screenShader = Shader("Shaders/toScreenShader.glsl")
+    channelShader = Shader("Shaders/primaryShader.glsl")
     vertices = [-1.0, 1.0, 1.0, -1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0, 1.0, 1.0]
     indices = [0, 1, 2, 2, 0, 3]
     vertexBuffer = VertexBuffer(vertices)
@@ -31,7 +31,7 @@ def Init():
     vertexArray = VertexArray(vertexBuffer, indexBuffer)
     FBO_A = FrameBuffer(FBO_width, FBO_height)
     FBO_B = FrameBuffer(FBO_width, FBO_height)
-    IconLib.Init()
+#    IconLib.Init()
 
 def RenderPrimaryView(channelList):
     global FBO_pingpong

@@ -50,6 +50,7 @@ def Connect():
             # Set movement speed
             Send(f"SPEED f={prm.filterStageSpeed}\r")
             Send(f"ACCEL f={prm.filterStageAcceleration}\r")
+            setFilter(0)
             info("Connection to ASI stage established & controller powered")
             return True
         else:
